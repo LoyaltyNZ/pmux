@@ -3,17 +3,28 @@ exec = bb.promisify(require('child_process').exec)
 program = require('commander');
 
 start_tmux = (configuration, verbose) ->
-  exec("tmux list-sessions").then( (out) ->
+  command = "tmux list-sessions"
+  console.log command
+  exec(command).then( (out) ->
+    console.log out
     out = out.join('')
     if out.indexOf(configuration.platform_name) != -1
-      exec("tmux kill-session -t #{configuration.platform_name}")
+      command = "tmux kill-session -t #{configuration.platform_name}"
+      console.log command
+      exec(command)
     else
       true
   )
-  .then( ->
-    exec("tmux -2 new-session -d -s #{configuration.platform_name}")
-  ).then( ->
-    exec("tmux set -t #{configuration.platform_name} set-remain-on-exit on") #for debugging
+  .then( (out) ->
+    console.log out
+    command = "tmux -2 new-session -d -s #{configuration.platform_name}"
+    console.log command
+    exec(command)
+  ).then( (out) ->
+    console.log out
+    command = "tmux set -t #{configuration.platform_name} set-remain-on-exit on"
+    console.log command
+    exec(command) #for debugging
   )
 
 create_windows = (configuration, verbose) ->
@@ -35,6 +46,9 @@ create_windows = (configuration, verbose) ->
       promises.push promise
 
   bb.all(promises)
+  .then( (outs) ->
+    console.log outs
+  )
 
 path = require 'path'
 
