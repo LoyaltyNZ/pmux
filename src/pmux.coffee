@@ -28,13 +28,15 @@ create_windows = (configuration, verbose) ->
       delay = win.delay || 0
       promise = bb.delay(delay)
       .then( ->
-        console.log command if verbose
+        console.log command
         exec(command)
       )
 
       promises.push promise
 
   bb.all(promises)
+
+path = require 'path'
 
 cli = ->
 
@@ -46,7 +48,8 @@ cli = ->
     .parse(process.argv);
 
   #Extracting Arguments
-  configuration = require program.args[0]
+
+  configuration = require path.join(process.cwd(), program.args[0])
   verbose = program.verbose
 
   console.log JSON.stringify(configuration, null , 2) if verbose
