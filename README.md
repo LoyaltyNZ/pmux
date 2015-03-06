@@ -1,0 +1,1 @@
+`npm install -g git+ssh://git@github.com:LoyaltyNZ/pmux.git`
