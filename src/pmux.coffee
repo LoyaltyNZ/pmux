@@ -1,5 +1,8 @@
 bb = require 'bluebird'
-exec = bb.promisify(require('child_process').exec)
+cp = require('child_process')
+exec = (command) ->
+  bb.try( -> cp.execSync(command).toString())
+
 program = require('commander');
 
 start_tmux = (configuration, verbose) ->
@@ -7,7 +10,6 @@ start_tmux = (configuration, verbose) ->
   console.log command
   exec(command).then( (out) ->
     console.log out
-    out = out.join('')
     if out.indexOf(configuration.platform_name) != -1
       command = "tmux kill-session -t #{configuration.platform_name}"
       console.log command
@@ -27,14 +29,29 @@ start_tmux = (configuration, verbose) ->
     exec(command) #for debugging
   )
 
+do_pre_commands = (configuration, verbose) ->
+  promise = bb.try( -> )
+  configuration.pre_commands = configuration.pre_commands || []
+
+  for command in configuration.pre_commands
+    do (command) ->
+      promise = promise.then(-> 
+        console.log command
+        exec(command)
+      ).then( (out) ->
+        console.log out
+      )
+  promise
+
 create_windows = (configuration, verbose) ->
 
   promises = []
   for name, win of configuration.windows
     do (name, win) ->
+      win.commands = win.commands || []
       command = "tmux new-window -n '#{name}' -t #{configuration.platform_name}"
       command += " -c #{win.dir}" if win.dir
-      command += " \"#{win.command}\""
+      command += " \"#{win.commands.join('; ')}\""
       
       delay = win.delay || 0
       promise = bb.delay(delay)
@@ -66,9 +83,12 @@ cli = ->
   configuration = require path.join(process.cwd(), program.args[0])
   verbose = program.verbose
 
-  console.log JSON.stringify(configuration, null , 2) if verbose
+  console.log JSON.stringify(configuration, null , 2)
 
   start_tmux(configuration, verbose)
+  .then( ->
+    do_pre_commands(configuration, verbose)
+  )
   .then( ->
     create_windows(configuration, verbose)
   )
