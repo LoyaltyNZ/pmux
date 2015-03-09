@@ -8,7 +8,8 @@ program = require('commander');
 start_tmux = (configuration, verbose) ->
   command = "tmux list-sessions"
   console.log command
-  bb.delay(250).then( -> exec(command))
+  bb.delay(250).then(->exec("tmux new-session -d"))
+  .then( -> bb.delay(250)).then( -> exec(command))
   .then( (out) -> bb.delay(250).then(-> out)) 
   .then( (out) ->
     console.log out
@@ -47,6 +48,7 @@ do_pre_commands = (configuration, verbose) ->
 
 create_windows = (configuration, verbose) ->
 
+  promise = bb.try( -> )
   promises = []
   for name, win of configuration.windows
     do (name, win) ->
@@ -55,15 +57,20 @@ create_windows = (configuration, verbose) ->
       win.commands.unshift "cd #{win.dir}" if win.dir
       command += " \"#{win.commands.join('; ')}\""
       
-      delay = win.delay || 0
-      promise = bb.delay(delay)
-      .then( ->
-        console.log command
-        exec(command)
-      )
+      if win.delay
+        promises.push bb.delay(win.delay).then(->
+          console.log command
+          exec(command)
+        )
+      else
+        promise = promise.then( -> bb.delay(100))
+        .then( ->
+          console.log command
+          exec(command)
+        )
 
-      promises.push promise
-
+      
+  promises.push(promise)
   bb.all(promises)
   .then( (outs) ->
     console.log outs
