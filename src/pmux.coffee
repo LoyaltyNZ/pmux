@@ -8,7 +8,9 @@ program = require('commander');
 start_tmux = (configuration, verbose) ->
   command = "tmux list-sessions"
   console.log command
-  exec(command).then( (out) ->
+  bb.delay(250).then( -> exec(command))
+  .then( (out) -> bb.delay(250).then(-> out)) 
+  .then( (out) ->
     console.log out
     if out.indexOf(configuration.platform_name) != -1
       command = "tmux kill-session -t #{configuration.platform_name}"
