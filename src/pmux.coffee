@@ -50,7 +50,7 @@ create_windows = (configuration, verbose) ->
     do (name, win) ->
       win.commands = win.commands || []
       command = "tmux new-window -n '#{name}' -t #{configuration.platform_name}"
-      command += " -c #{win.dir}" if win.dir
+      win.commands.unshift "cd #{win.dir}" if win.dir
       command += " \"#{win.commands.join('; ')}\""
       
       delay = win.delay || 0
