@@ -1,15 +1,14 @@
 bb = require 'bluebird'
-cp = require('child_process')
+execAsync = bb.promisify require('child_process').exec
 exec = (command) ->
-  bb.try( -> cp.execSync(command).toString())
+  console.log "EXECUTE", command
+  execAsync(command).then((out) -> out.toString())
 
 program = require('commander');
 
 start_tmux = (configuration, verbose) ->
-  command = "tmux list-sessions"
-  console.log command
-  bb.delay(250).then(->exec("tmux new-session -d"))
-  .then( -> bb.delay(250)).then( -> exec(command))
+  bb.delay(250).then(-> exec("tmux new-session -d -s FORCE_START_TMUX").catch((e) -> console.log e))
+  .then( -> bb.delay(250)).then( -> exec("tmux list-sessions"))
   .then( (out) -> bb.delay(250).then(-> out)) 
   .then( (out) ->
     console.log out
