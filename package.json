@@ -1,12 +1,12 @@
 {
     "name": "pmux",
-    "description": "Programmable tmux, easily start multiple sessions with simple configurations",
+    "description": "Programmable Multiplexer, easily start multiple sessions with simple configurations",
     "version": "0.0.1",
     "author": {
         "name": "Graham Jenson",
         "email": "graham.jenson@loyalty.co.nz"
     },
-    "main": "src/server.coffee",
+    "main": "src/helpers.coffee",
     "engines": {
         "node": ">= 0.12.0"
     },
@@ -14,12 +14,13 @@
         "coffee-script": "1.8.0",
         "bluebird": "2.6.0",
         "underscore": "1.7.0",
-        "commander": "2.6.0"
+        "commander": "2.6.0",
+        "rimraf": "2.3.1",
+        "chalk": "0.5.1"
     },
     "bin": {
         "pmux" : "./bin/pmux"
     },
-
     "devDependencies": {
     }
 }

@@ -1,0 +1,11 @@
+{
+  "name": "simple_example",
+  "pre_commands": ["ls"],
+  "windows": [
+    {
+      "name": "Print Directory",
+      "commands": ["pwd"],
+      "dir" : "."
+    }
+  ]
+}

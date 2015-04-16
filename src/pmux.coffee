@@ -1,78 +1,89 @@
 bb = require 'bluebird'
 execAsync = bb.promisify require('child_process').exec
-exec = (command) ->
-  console.log "EXECUTE", command
-  execAsync(command).then((out) -> out.toString())
-
 program = require('commander');
+chalk =  require 'chalk'
+exec = (command) ->
+  console.log "" if VERBOSE
+  console.log "#{chalk.blue("executing")} '#{command}'" if VERBOSE
+  execAsync(command)
+  .then((out) -> 
+    out = out.filter( (x) -> x != '')
+    out = out.toString()
+    console.log "#{chalk.blue("returned")} '#{out}'" if VERBOSE
+    console.log "" if VERBOSE
+    out
+  )
 
-start_tmux = (configuration, verbose) ->
-  bb.delay(250).then(-> exec("tmux new-session -d -s FORCE_START_TMUX").catch((e) -> console.log e))
-  .then( -> bb.delay(250)).then( -> exec("tmux list-sessions"))
-  .then( (out) -> bb.delay(250).then(-> out)) 
+exec_tmux = (command) ->
+  # tmux returns before fully executing command 
+  # so tmux commands must be followed by delay to give it time to do its thing
+  exec(command)
+  .delay(250)
+
+start_tmux = (configuration) ->
+  exec_tmux("tmux new-session -d -s PMUX_INIT_SESSION") #force tmux to start if it hasn't yet
+  .catch( (e) ->
+    #catch error if it has started already
+  ) 
+  .then( -> exec_tmux("tmux list-sessions"))
   .then( (out) ->
-    console.log out
-    if out.indexOf(configuration.platform_name) != -1
-      command = "tmux kill-session -t #{configuration.platform_name}"
-      console.log command
-      exec(command)
+    if out.indexOf(configuration.name) != -1
+      exec_tmux("tmux kill-session -t #{configuration.name}")
     else
       true
   )
   .then( (out) ->
-    console.log out
-    command = "tmux -2 new-session -d -s #{configuration.platform_name}"
-    console.log command
-    exec(command)
+    exec_tmux("tmux -2 new-session -d -s #{configuration.name}")
   ).then( (out) ->
-    console.log out
-    command = "tmux set -t #{configuration.platform_name} set-remain-on-exit on"
-    console.log command
-    exec(command) #for debugging
+    exec_tmux("tmux set -t #{configuration.name} set-remain-on-exit on") #for debugging
+  )
+  .catch((e) -> 
+    console.error "ERROR STARTING PMUX"
+    console.error e
+    throw e
   )
 
-do_pre_commands = (configuration, verbose) ->
-  promise = bb.try( -> )
+do_pre_commands = (configuration) ->
+  #create a chain of promises to execute the pre-commands synchronously
+  pre_commands_promise = bb.try( -> )
   configuration.pre_commands = configuration.pre_commands || []
-
   for command in configuration.pre_commands
     do (command) ->
-      promise = promise.then(-> 
-        console.log command
+      pre_commands_promise = pre_commands_promise.then(-> 
         exec(command)
-      ).then( (out) ->
-        console.log out
       )
-  promise
 
-create_windows = (configuration, verbose) ->
+  pre_commands_promise
+  .catch((e) -> 
+    console.error "ERROR EXECUTING PRE COMMANDS" 
+    console.error e
+    throw e
+  )
+
+create_windows = (configuration) ->
 
   promise = bb.try( -> )
-  promises = []
   for name, win of configuration.windows
     do (name, win) ->
+      if typeof(win.commands) == 'string'
+        win.commands = [win.commands]  
+
       win.commands = win.commands || []
-      command = "tmux new-window -n '#{name}' -t #{configuration.platform_name}"
+
+      command = "tmux new-window -n '#{name}' -t #{configuration.name}"
       win.commands.unshift "cd #{win.dir}" if win.dir
       command += " \"#{win.commands.join('; ')}\""
       
-      if win.delay
-        promises.push bb.delay(win.delay).then(->
-          console.log command
-          exec(command)
-        )
-      else
-        promise = promise.then( -> bb.delay(100))
-        .then( ->
-          console.log command
-          exec(command)
-        )
+      promise = promise
+      .then( ->
+        exec_tmux(command)
+      )
 
-      
-  promises.push(promise)
-  bb.all(promises)
-  .then( (outs) ->
-    console.log outs
+  promise
+  .catch((e) -> 
+    console.error "ERROR CREATING WINDOWS" 
+    console.error e
+    throw e
   )
 
 path = require 'path'
@@ -89,16 +100,16 @@ cli = ->
   #Extracting Arguments
 
   configuration = require path.join(process.cwd(), program.args[0])
-  verbose = program.verbose
+  global.VERBOSE = program.verbose
 
   console.log JSON.stringify(configuration, null , 2)
 
-  start_tmux(configuration, verbose)
+  do_pre_commands(configuration)
   .then( ->
-    do_pre_commands(configuration, verbose)
+    start_tmux(configuration)
   )
   .then( ->
-    create_windows(configuration, verbose)
+    create_windows(configuration)
   )
 
 module.exports = cli
