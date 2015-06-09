@@ -2,6 +2,11 @@
     "name": "pmux",
     "description": "Programmable Multiplexer: easily start tmux sessions with simple descriptions",
     "version": "0.0.1",
+    "homepage": "https://github.com/LoyaltyNZ/pmux",
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:LoyaltyNZ/pmux.git"
+    },
     "author": {
         "name": "Graham Jenson",
         "email": "graham.jenson@loyalty.co.nz"
