@@ -21,7 +21,7 @@ exec_tmux = (command) ->
   .delay(250)
 
 start_tmux = (configuration) ->
-  exec_tmux("tmux new-session -d -s PMUX_INIT_SESSION") #force tmux to start if it hasn't yet
+  exec_tmux("tmux new-session -d -s #{configuration.name}") #force tmux to start if it hasn't yet
   .catch( (e) ->
     #catch error if it has started already
   ) 
@@ -102,6 +102,7 @@ cli = ->
   configuration = require path.join(process.cwd(), program.args[0])
   global.VERBOSE = program.verbose
 
+  console.log "starting pmux with configuration"
   console.log JSON.stringify(configuration, null , 2)
 
   do_pre_commands(configuration)

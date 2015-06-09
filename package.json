@@ -1,6 +1,6 @@
 {
     "name": "pmux",
-    "description": "Programmable Multiplexer, easily start multiple sessions with simple configurations",
+    "description": "Programmable Multiplexer: easily start tmux sessions with simple descriptions",
     "version": "0.0.1",
     "author": {
         "name": "Graham Jenson",
@@ -21,6 +21,5 @@
     "bin": {
         "pmux" : "./bin/pmux"
     },
-    "devDependencies": {
-    }
+    "license": "MIT"
 }
